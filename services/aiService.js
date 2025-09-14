@@ -107,6 +107,76 @@ export async function generateTaskWithAI(prompt) {
   //    - Wrap everything in a try-catch block
   //    - Throw meaningful error messages
   //
+  // 1. Check if the OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OpenAI API key not configured. Please set process.env.OPENAI_API_KEY");
+    }
+
+    // Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    // 2. Create a system prompt that tells the AI what to do
+    const systemPrompt = `
+      You are a task management assistant. 
+      Your job is to take a user’s description of a task and break it down into tasks and subtasks. 
+      Always respond in strict JSON format.
+
+      JSON format:
+      {
+        "task": "Main task description",
+        "subtasks": [
+          { "title": "Subtask 1", "type": "Mandatory" },
+          { "title": "Subtask 2", "type": "Optional" },
+          { "title": "Subtask 3", "type": "Preparation" }
+        ]
+      }
+
+      Guidelines:
+      - Each task should be clear and actionable.
+      - Subtasks should break down the main task into smaller steps.
+      - Always include at least 2–4 subtasks.
+    `;
+
+    // 3. Create a user prompt that includes the user's task description
+    const userPrompt = `User Task: ${prompt}`;
+
+    // 4. Call the OpenAI API
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      temperature: 0.7,       // Balanced creativity
+      max_tokens: 1000,       // Limit output length
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ]
+    });
+
+    // 5. Extract the response content
+    const responseContent = completion.choices[0]?.message?.content;
+    if (!responseContent) {
+      throw new Error("No response from OpenAI API");
+    }
+
+    // 6. Use the extractTaskFromAIResponse function to parse & validate
+    const parsedTask = extractTaskFromAIResponse(responseContent);
+
+    // 7. Return the parsed task data
+    return parsedTask;
+
+  
+    // 8. Handle errors appropriately
+    console.error("Error generating tasks with AI:", error.message);
+    throw new Error("Failed to generate tasks: " + error.message);
+
+
+  throw new Error(
+    "TODO: Complete the generateTaskWithAI function - see instructions above"
+  );
+
+  
+
 
 
   throw new Error(
